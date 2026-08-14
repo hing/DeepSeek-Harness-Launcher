@@ -1,0 +1,52 @@
+name: build
+
+on:
+  workflow_dispatch:
+    inputs:
+      node_version:
+        description: "捆绑的便携 Node.js 版本（默认 v24.19.0）"
+        required: false
+        default: "v24.19.0"
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js（构建机用）
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Build
+        shell: pwsh
+        run: |
+          $nodeVer = "${{ github.event.inputs.node_version }}"
+          if (-not $nodeVer) { $nodeVer = "v24.19.0" }
+          powershell -ExecutionPolicy Bypass -File scripts/build.ps1 -NodeVersion $nodeVer
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: DSHL-windows-x64
+          path: |
+            build/dist/*.exe
+            build/dist/*.zip
+          if-no-files-found: error
+
+      - name: Release (tag push)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            build/dist/*.exe
+            build/dist/*.zip
+          generate_release_notes: true

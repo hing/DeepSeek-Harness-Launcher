@@ -1,0 +1,14 @@
+# 依赖与构建产物
+node_modules/
+/build/
+
+# 上游 DSH 源码参考 checkout（仅本地参考，不随仓库发布）
+/.DSH/
+
+# 运行时用户数据（程序目录内）
+/data/
+
+# 杂项
+*.log
+.DS_Store
+Thumbs.db

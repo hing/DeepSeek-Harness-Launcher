@@ -1,0 +1,88 @@
+{
+  "name": "dshl",
+  "productName": "DSHL",
+  "version": "0.1.0",
+  "description": "DeepSeek Harness 一键启动器：捆绑 Node 运行时与 dsh 依赖闭包，Electron 窗口加载 Web UI，无需安装 Node、无需浏览器。",
+  "main": "main.js",
+  "author": "DSHL",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hing/DeepSeek-Harness-Launcher.git"
+  },
+  "bugs": {
+    "url": "https://github.com/hing/DeepSeek-Harness-Launcher/issues"
+  },
+  "homepage": "https://github.com/hing/DeepSeek-Harness-Launcher#readme",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win"
+  },
+  "devDependencies": {
+    "electron": "^39.0.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.dshl.app",
+    "productName": "DSHL",
+    "directories": {
+      "output": "../build/dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "package.json",
+      "build/icon.png"
+    ],
+    "afterPack": "scripts/after-pack.js",
+    "extraResources": [
+      {
+        "from": "../build/node",
+        "to": "node"
+      },
+      {
+        "from": "../build/dsh",
+        "to": "dsh"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "DSHL",
+      "installerLanguages": [
+        "zh_CN",
+        "en_US"
+      ]
+    }
+  },
+  "dependencies": {
+    "koffi": "^3.1.5"
+  },
+  "allowScripts": {
+    "electron@39.8.10": true,
+    "electron-winstaller@5.4.0": true,
+    "koffi@3.1.5": true
+  }
+}
