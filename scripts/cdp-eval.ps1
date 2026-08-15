@@ -1,4 +1,4 @@
-# CDP / Node inspector 求值辅助脚本（测试用）
+﻿# CDP / Node inspector 求值辅助脚本（测试用）
 # 用法：.\cdp-eval.ps1 -Port 9230 -Expression '...' [-AwaitPromise]
 param(
     [Parameter(Mandatory = $true)][int]$Port,

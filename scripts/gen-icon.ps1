@@ -1,4 +1,4 @@
-# 生成应用图标：256x256 PNG + 同尺寸 PNG 压缩的 .ico（Vista+ 支持）
+﻿# 生成应用图标：256x256 PNG + 同尺寸 PNG 压缩的 .ico（Vista+ 支持）
 # 输出：app\build\icon.png 与 app\build\icon.ico
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot

@@ -1,4 +1,4 @@
-# 向页面发送 Ctrl+L 组合键（测试用）：触发「连接远程服务」弹窗
+﻿# 向页面发送 Ctrl+L 组合键（测试用）：触发「连接远程服务」弹窗
 param(
     [Parameter(Mandatory = $true)][int]$Port,
     [int]$Index = 0

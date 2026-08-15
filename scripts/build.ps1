@@ -1,4 +1,4 @@
-# DSHL 一键构建脚本
+﻿# DSHL 一键构建脚本
 #
 # 步骤：
 #   1. 下载便携版 Node.js（nodejs.org 官方 zip）到 build\node\

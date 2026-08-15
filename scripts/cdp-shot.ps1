@@ -1,4 +1,4 @@
-# CDP 页面截图（测试用）：把指定 target 渲染输出存为 PNG
+﻿# CDP 页面截图（测试用）：把指定 target 渲染输出存为 PNG
 # 用法：.\cdp-shot.ps1 -Port 9230 -Index 1 -Out shot.png
 param(
     [Parameter(Mandatory = $true)][int]$Port,
