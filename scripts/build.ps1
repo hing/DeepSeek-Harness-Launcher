@@ -20,6 +20,9 @@ $nodeDir = Join-Path $build 'node'
 $dshDir = Join-Path $build 'dsh'
 $appDir = Join-Path $root 'app'
 
+# 确保 build 目录存在（CI 全新 checkout 时 build\ 不在仓库中）
+New-Item -ItemType Directory -Force -Path $build | Out-Null
+
 Write-Host "=== DSHL 构建开始（Node $NodeVersion）===" -ForegroundColor Cyan
 
 # ---- 1. 便携版 Node ----
