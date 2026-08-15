@@ -102,7 +102,7 @@ if (-not $SkipPack) {
                 Write-Host '    已打收集器补丁：powershell.exe -> pwsh.exe'
             }
         }
-        & npx.cmd electron-builder --win
+        & npx.cmd electron-builder --win --publish never
         if ($LASTEXITCODE -ne 0) { throw 'electron-builder 打包失败' }
     } finally {
         Pop-Location
