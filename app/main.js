@@ -908,7 +908,7 @@ const DATA_DIR_DIALOG_HTML = `<div id="dshl-data-overlay">
 #dshl-data-overlay { position: fixed; inset: 0; z-index: 2147483647; display: flex;
   align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.24);
   backdrop-filter: blur(2px); font: 14px/22px "Segoe UI", system-ui, sans-serif; color: #0f1115; }
-#dshl-data-overlay .dshl-card { width: 520px; max-width: calc(100vw - 48px); box-sizing: border-box;
+#dshl-data-overlay .dshl-card { width: 560px; max-width: calc(100vw - 48px); box-sizing: border-box;
   padding: 28px; background: #ffffff; border-radius: 24px; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18); }
 #dshl-data-overlay .head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 #dshl-data-overlay .title { margin: 0; font-size: 20px; line-height: 28px; font-weight: 500; color: #0f1115; }
@@ -917,10 +917,12 @@ const DATA_DIR_DIALOG_HTML = `<div id="dshl-data-overlay">
 #dshl-data-overlay .copy p { margin: 0; }
 #dshl-data-overlay .copy p + p { margin-top: 12px; }
 #dshl-data-overlay .copy b { color: #0f1115; font-weight: 500; }
+#dshl-data-overlay .copy .section { margin-top: 16px; }
+#dshl-data-overlay .copy .section:first-child { margin-top: 0; }
 #dshl-data-overlay .copy .path { word-break: break-all; user-select: text; font-size: 13px;
-  line-height: 20px; color: #0f1115; background: #f1f3f5; border-radius: 8px; padding: 8px 12px; margin-top: 6px; }
+  line-height: 20px; color: #0f1115; background: #f1f3f5; border-radius: 8px; padding: 8px 12px; margin-top: 8px; }
 #dshl-data-overlay .copy .warn { background: #fff7e6; border: 1px solid #ffe0a3; border-radius: 10px;
-  padding: 10px 14px; color: #8a5a00; }
+  padding: 10px 14px; color: #8a5a00; margin-top: 20px; }
 #dshl-data-overlay .copy .warn b { color: #8a5a00; }
 #dshl-data-overlay .actions { display: flex; justify-content: flex-end; margin-top: 24px; gap: 8px; }
 #dshl-data-overlay button { box-sizing: border-box; display: inline-flex; align-items: center;
@@ -937,14 +939,19 @@ const DATA_DIR_DIALOG_HTML = `<div id="dshl-data-overlay">
   </div>
   <div class="body">
     <div class="copy">
-      <p><b>内核数据目录（.dsh）</b>：包含 DeepSeek Harness 的全部运行数据（API Key、会话、插件、附件等），保存在程序目录内的 <b>.dsh</b> 目录：</p>
-      <p class="path" id="dsh-path"></p>
-      <p><b>启动器数据目录（.launcher）</b>：包含启动器 Electron 自身的数据（缓存、Local Storage 等），保存在程序目录内的 <b>.launcher</b> 目录：</p>
-      <p class="path" id="launcher-path"></p>
+      <div class="section">
+        <p><b>内核数据目录（.dsh）</b></p>
+        <p>包含 DeepSeek Harness 的全部运行数据（API Key、会话、插件、附件等）</p>
+        <p class="path" id="dsh-path"></p>
+      </div>
+      <div class="section">
+        <p><b>启动器数据目录（.launcher）</b></p>
+        <p>包含启动器 Electron 自身的数据（缓存、Local Storage 等）</p>
+        <p class="path" id="launcher-path"></p>
+      </div>
       <div class="warn">
         <p><b>⚠ 备份/迁移</b>：必须通过托盘菜单 <b>「程序备份迁移」</b> 才能保证程序以及上述数据随目录完好备份/迁移！</p>
       </div>
-      <p>如需改到其他位置，设置环境变量 <b>DSH_HOME</b> 指向目标目录后重新启动。</p>
     </div>
     <div class="actions">
       <button id="open">打开程序目录</button>
@@ -985,7 +992,7 @@ const MIGRATE_DIALOG_HTML = `<div id="dshl-migrate-overlay">
 #dshl-migrate-overlay { position: fixed; inset: 0; z-index: 2147483647; display: flex;
   align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.24);
   backdrop-filter: blur(2px); font: 14px/22px "Segoe UI", system-ui, sans-serif; color: #0f1115; }
-#dshl-migrate-overlay .dshl-card { width: 540px; max-width: calc(100vw - 48px); box-sizing: border-box;
+#dshl-migrate-overlay .dshl-card { width: 580px; max-width: calc(100vw - 48px); box-sizing: border-box;
   padding: 28px; background: #ffffff; border-radius: 24px; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18); }
 #dshl-migrate-overlay .head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 #dshl-migrate-overlay .title { margin: 0; font-size: 20px; line-height: 28px; font-weight: 500; color: #0f1115; }
@@ -994,13 +1001,11 @@ const MIGRATE_DIALOG_HTML = `<div id="dshl-migrate-overlay">
 #dshl-migrate-overlay .copy p { margin: 0; }
 #dshl-migrate-overlay .copy p + p { margin-top: 12px; }
 #dshl-migrate-overlay .copy b { color: #0f1115; font-weight: 500; }
+#dshl-migrate-overlay .copy .steps { margin-top: 12px; padding-left: 0; list-style: none; }
+#dshl-migrate-overlay .copy .steps li { margin-top: 10px; }
 #dshl-migrate-overlay .copy .warn { background: #fff7e6; border: 1px solid #ffe0a3; border-radius: 10px;
-  padding: 10px 14px; color: #8a5a00; }
+  padding: 10px 14px; color: #8a5a00; margin-top: 20px; }
 #dshl-migrate-overlay .copy .warn b { color: #8a5a00; }
-#dshl-migrate-overlay .copy .steps { margin-top: 8px; padding-left: 0; list-style: none; }
-#dshl-migrate-overlay .copy .steps li { margin-top: 8px; }
-#dshl-migrate-overlay .copy .steps .num { display: inline-block; width: 20px; height: 20px; line-height: 20px;
-  text-align: center; border-radius: 50%; background: #0f1115; color: #fff; font-size: 12px; margin-right: 8px; }
 #dshl-migrate-overlay .actions { display: flex; justify-content: flex-end; margin-top: 24px; gap: 8px; }
 #dshl-migrate-overlay button { box-sizing: border-box; display: inline-flex; align-items: center;
   justify-content: center; height: 36px; padding: 0 14px; border-radius: 18px;
@@ -1019,17 +1024,17 @@ const MIGRATE_DIALOG_HTML = `<div id="dshl-migrate-overlay">
       <p>本程序支持便携化运行，可以将整个程序目录移动到其它位置。</p>
       <p>但是，<b>不能直接移动/复制程序目录</b>：程序运行时会在
          <b>.dsh\\profiles\\node_modules</b> 维护一套指向安装目录的受管链接树。
-         直接移动/复制时，Windows 资源管理器会跟随这些链接反复复制
+         直接移动/复制时，资源管理器会跟随这些链接反复复制
          <b>resources\\dsh</b> 的内容，导致进度条卡死、目录损坏。</p>
       <p>必须按以下步骤操作，才能保证程序完好备份/迁移：</p>
       <ul class="steps">
-        <li><span class="num">1</span>点击 <b>「清除受管链接树并退出」</b>：程序将自动停止服务、清除受管链接树，然后自动退出</li>
-        <li><span class="num">2</span>随后手动把整个程序目录移动/复制到新位置，再重新启动程序，会自动重建受管链接树</li>
-        <li><span class="num">3</span>可进一步确认程序运行状态无异常、会话记录完好</li>
+        <li>① 点击 <b>「清除受管链接树并退出」</b>：程序将自动停止服务、清除受管链接树，然后自动退出</li>
+        <li>② 随后手动把整个程序目录移动/复制到新位置，再重新启动程序，会自动重建受管链接树</li>
+        <li>③ 可进一步确认程序运行状态无异常、会话记录完好</li>
       </ul>
       <div class="warn">
         <p><b>⚠ 提示</b>：若自动清除受管链接树失败，可退出程序后执行
-           <b>.clean-links.bat</b>，或手动删除 <b>.dsh\\profiles\\node_modules</b> 目录后再迁移。</p>
+           <b>.clean-links.bat</b> 脚本，或手动删除 <b>.dsh\\profiles\\node_modules</b> 目录后再移动/复制。</p>
       </div>
     </div>
     <div class="actions">
