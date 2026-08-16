@@ -326,7 +326,7 @@ function writeLauncherConfig(patch) {
   writeFileSync(join(dataDir, 'launcher.json'), JSON.stringify(cfg, null, 2) + '\n', 'utf8')
 }
 
-/** 宿主正在主动重启（设置端口后）：跳过「宿主意外退出」错误框。 */
+/** 宿主被主动停止/重启（设置端口、备份迁移）：跳过「宿主意外退出」错误框。 */
 let hostRestarting = false
 
 /** 应用端口设置：写入 launcher.json；本地模式重启宿主生效，远程模式仅保存。 */
@@ -612,7 +612,7 @@ function startHost() {
         ))
       } else if (mainWindow && !hostRestarting) {
         // 宿主在就绪后死亡：服务已不可用，提示后退出
-        // （设置端口后主动重启宿主时 hostRestarting=true，跳过此提示）
+        // （设置端口重启、备份迁移主动停止宿主时 hostRestarting=true，跳过此提示）
         dialog.showErrorBox(
           'DeepSeek Harness 已退出',
           `dsh 宿主进程意外退出（code=${code}, signal=${signal}）。\n\n请重新启动 DSHL。`,
@@ -1079,7 +1079,8 @@ function showMigrateDialog() {
 function performMigration() {
   closeMigrateOverlay()
   try {
-    // 1. 停止宿主，确保文件未被占用
+    // 1. 主动停止宿主（置位 hostRestarting，避免 exit 回调误报「意外退出」）
+    hostRestarting = true
     killHost()
     // 2. 清理受管链接树（只删链接，不碰 .dsh\ 下其它用户数据）
     const nmDir = join(dataDir, 'profiles', 'node_modules')
