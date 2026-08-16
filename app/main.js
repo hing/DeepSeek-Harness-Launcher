@@ -992,7 +992,7 @@ const MIGRATE_DIALOG_HTML = `<div id="dshl-migrate-overlay">
 #dshl-migrate-overlay { position: fixed; inset: 0; z-index: 2147483647; display: flex;
   align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.24);
   backdrop-filter: blur(2px); font: 14px/22px "Segoe UI", system-ui, sans-serif; color: #0f1115; }
-#dshl-migrate-overlay .dshl-card { width: 580px; max-width: calc(100vw - 48px); box-sizing: border-box;
+#dshl-migrate-overlay .dshl-card { width: 600px; max-width: calc(100vw - 48px); box-sizing: border-box;
   padding: 28px; background: #ffffff; border-radius: 24px; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18); }
 #dshl-migrate-overlay .head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 #dshl-migrate-overlay .title { margin: 0; font-size: 20px; line-height: 28px; font-weight: 500; color: #0f1115; }
@@ -1003,6 +1003,8 @@ const MIGRATE_DIALOG_HTML = `<div id="dshl-migrate-overlay">
 #dshl-migrate-overlay .copy b { color: #0f1115; font-weight: 500; }
 #dshl-migrate-overlay .copy .steps { margin-top: 12px; padding-left: 0; list-style: none; }
 #dshl-migrate-overlay .copy .steps li { margin-top: 10px; }
+#dshl-migrate-overlay .copy .steps .num { display: inline-block; width: 20px; height: 20px; line-height: 20px;
+  text-align: center; border-radius: 50%; background: #0f1115; color: #fff; font-size: 12px; margin-right: 8px; }
 #dshl-migrate-overlay .copy .warn { background: #fff7e6; border: 1px solid #ffe0a3; border-radius: 10px;
   padding: 10px 14px; color: #8a5a00; margin-top: 20px; }
 #dshl-migrate-overlay .copy .warn b { color: #8a5a00; }
@@ -1028,9 +1030,9 @@ const MIGRATE_DIALOG_HTML = `<div id="dshl-migrate-overlay">
          <b>resources\\dsh</b> 的内容，导致进度条卡死、目录损坏。</p>
       <p>必须按以下步骤操作，才能保证程序完好备份/迁移：</p>
       <ul class="steps">
-        <li>① 点击 <b>「清除受管链接树并退出」</b>：程序将自动停止服务、清除受管链接树，然后自动退出</li>
-        <li>② 随后手动把整个程序目录移动/复制到新位置，再重新启动程序，会自动重建受管链接树</li>
-        <li>③ 可进一步确认程序运行状态无异常、会话记录完好</li>
+        <li><span class="num">1</span>点击 <b>「清除受管链接树并退出」</b>：程序将自动停止服务、清除受管链接树，然后自动退出</li>
+        <li><span class="num">2</span>随后手动把整个程序目录移动/复制到新位置，再重新启动程序，会自动重建受管链接树</li>
+        <li><span class="num">3</span>可进一步确认程序运行状态无异常、会话记录完好</li>
       </ul>
       <div class="warn">
         <p><b>⚠ 提示</b>：若自动清除受管链接树失败，可退出程序后执行
