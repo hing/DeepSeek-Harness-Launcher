@@ -45,6 +45,12 @@ contextBridge.exposeInMainWorld('dshlDialog', {
   closeMove: () => ipcRenderer.send('dshl:dialog-close-move'),
 })
 
+// 「程序目录迁移」覆盖层桥
+contextBridge.exposeInMainWorld('dshlMigrate', {
+  confirm: () => ipcRenderer.send('dshl:migrate-confirm'),
+  cancel: () => ipcRenderer.send('dshl:migrate-cancel'),
+})
+
 // 「设置服务端口」覆盖层桥
 contextBridge.exposeInMainWorld('dshlPort', {
   /** 提交端口设置（空字符串 = 自动选空闲端口）。 */

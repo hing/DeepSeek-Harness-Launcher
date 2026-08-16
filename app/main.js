@@ -489,11 +489,10 @@ function writeDataReadme() {
     '  重要：.dsh\\profiles\\node_modules 是 dsh 自动管理的链接树（不含用户数据，',
     '  删除后下次启动自动重建）。跨盘复制/移动目录时，Windows 资源管理器会跟随',
     '  这些链接反复复制 resources\\dsh 的内容，导致进度条卡死。',
-    '  正确做法（任选其一）：',
-    '  0) 双击程序目录内的 .clean-links.bat，自动删除链接树后再移动（最省事）；',
-    '  1) 移动前先删除 .dsh\\profiles\\node_modules（启动时自动重建），再移动；',
-    '  2) 或：同一盘符内剪切移动（瞬间完成，不受链接影响）；',
-    '  3) 或：用 robocopy 复制：robocopy "源目录" "目标目录" /E /SL /XJ /R:1 /W:1',
+    '  推荐：托盘菜单「程序目录迁移…」→ 确认后自动清理链接树并退出，',
+    '  然后整体移动目录，重启即自动重建。',
+    '  备选：双击程序目录内 .clean-links.bat，或同盘剪切，或',
+    '  robocopy "源目录" "目标目录" /E /SL /XJ /R:1 /W:1',
     '  移动后首次启动，启动器会自动重建全部链接。',
     '',
     'Electron 自身的数据（缓存、Local Storage 等）保存在程序目录内 .launcher\\，',
@@ -740,6 +739,7 @@ function buildTrayMenu() {
     { label: '打开日志目录', click: openLogDir },
     { label: '数据目录说明…', click: showDataDirDialog },
     { label: '移动目录说明…', click: showMoveGuideDialog },
+    { label: '程序目录迁移…', click: showMigrateDialog },
     { type: 'separator' },
     { label: '关于', click: showAboutDialog },
     { label: '退出', click: () => app.quit() },
@@ -1012,11 +1012,10 @@ const MOVE_GUIDE_DIALOG_HTML = `<div id="dshl-move-overlay">
          进度条可能长时间卡死。原因是 <b>.dsh\\profiles\\node_modules</b> 是 dsh
          自动维护的链接树（指向 resources\\dsh 下的真实包）；资源管理器会跟随
          这些链接反复复制目标内容，导致卡死。</p>
-      <p><b>该链接树不含任何用户数据</b>，删除后下次启动会自动重建。请按任一方式移动：</p>
-      <p>① 双击程序目录内 <code>.clean-links.bat</code> 自动清理（推荐）<br>
-         ② 移动前先删除 <code>.dsh\\profiles\\node_modules</code><br>
-         ③ 同一盘符内剪切移动（瞬间完成，不受影响）<br>
-         ④ 使用命令行复制：<code>robocopy "源目录" "目标目录" /E /SL /XJ /R:1 /W:1</code></p>
+      <p><b>该链接树不含任何用户数据</b>，删除后下次启动会自动重建。</p>
+      <p>推荐：托盘菜单「<b>程序目录迁移…</b>」→ 确认后自动清理并退出，即可安全移动。<br>
+         备选：双击 <code>.clean-links.bat</code>、同盘剪切、或<br>
+         <code>robocopy "源目录" "目标目录" /E /SL /XJ /R:1 /W:1</code></p>
       <p>移动完成后首次启动，启动器会自动重建全部链接。</p>
     </div>
     <div class="actions">
@@ -1047,6 +1046,116 @@ function closeMoveOverlay() {
 
 function showMoveGuideDialog() {
   openMoveGuideDialog()
+}
+
+/**
+ * 「程序目录迁移」对话框（注入到主窗口页面的 DOM 覆盖层）。
+ * 说明迁移流程；用户确认后自动清理链接树并退出程序，随后可安全移动目录。
+ */
+const MIGRATE_DIALOG_HTML = `<div id="dshl-migrate-overlay">
+<style>
+#dshl-migrate-overlay { position: fixed; inset: 0; z-index: 2147483647; display: flex;
+  align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(2px); font: 14px/22px "Segoe UI", system-ui, sans-serif; color: #0f1115; }
+#dshl-migrate-overlay .dshl-card { width: 520px; max-width: calc(100vw - 48px); box-sizing: border-box;
+  padding: 28px; background: #ffffff; border-radius: 24px; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18); }
+#dshl-migrate-overlay .head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+#dshl-migrate-overlay .title { margin: 0; font-size: 20px; line-height: 28px; font-weight: 500; color: #0f1115; }
+#dshl-migrate-overlay .body { margin-top: 20px; }
+#dshl-migrate-overlay .copy { font-size: 14px; line-height: 24px; color: #61666b; }
+#dshl-migrate-overlay .copy p { margin: 0; }
+#dshl-migrate-overlay .copy p + p { margin-top: 12px; }
+#dshl-migrate-overlay .copy b { color: #0f1115; font-weight: 500; }
+#dshl-migrate-overlay .actions { display: flex; justify-content: flex-end; margin-top: 24px; gap: 8px; }
+#dshl-migrate-overlay button { box-sizing: border-box; display: inline-flex; align-items: center;
+  justify-content: center; height: 36px; padding: 0 14px; border-radius: 18px;
+  font: inherit; font-size: 14px; line-height: 22px; cursor: pointer;
+  background: transparent; color: #0f1115; border: 1px solid rgba(0, 0, 0, 0.1); }
+#dshl-migrate-overlay button:hover { background: rgba(38, 49, 72, 0.06); }
+#dshl-migrate-overlay button.primary { background: #0f1115; color: #ffffff; border: none; min-width: 120px; }
+#dshl-migrate-overlay button.primary:hover { background: #43454a; }
+</style>
+<div class="dshl-card">
+  <div class="head">
+    <h2 class="title">程序目录迁移</h2>
+  </div>
+  <div class="body">
+    <div class="copy">
+      <p>将整个程序目录（绿色版解压目录）移动到其它位置。确认后将自动执行：</p>
+      <p>① 停止本地服务并清理 <b>.dsh\\profiles\\node_modules</b> 链接树
+         （不含用户数据，移动后首次启动自动重建）<br>
+         ② 退出程序<br>
+         ③ 随后你把整个程序目录移动/复制到新位置，再重新启动即可</p>
+      <p><b>注意</b>：跨盘移动请在清理完成后进行；移动时建议整体剪切/移动，
+         或使用 <code>robocopy "源目录" "目标目录" /E /SL /XJ /R:1 /W:1</code>。</p>
+      <p>用户数据（API Key、会话等）保存在 <b>.dsh\\</b>，随目录一起迁移，不会丢失。</p>
+    </div>
+    <div class="actions">
+      <button id="cancel">取消</button>
+      <button id="migrate" class="primary">确认迁移</button>
+    </div>
+  </div>
+</div>
+</div>`
+
+/** 打开「程序目录迁移」覆盖层（先显示主窗口；已打开则忽略）。 */
+function openMigrateDialog() {
+  showMainWindow()
+  injectIntoMain(`(() => {
+    if (document.getElementById('dshl-migrate-overlay')) return
+    document.body.insertAdjacentHTML('beforeend', ${JSON.stringify(MIGRATE_DIALOG_HTML)})
+    const overlay = document.getElementById('dshl-migrate-overlay')
+    overlay.querySelector('#cancel').addEventListener('click', () => window.dshlMigrate.cancel())
+    overlay.querySelector('#migrate').addEventListener('click', () => window.dshlMigrate.confirm())
+  })()`)
+}
+
+/** 关闭「程序目录迁移」覆盖层。 */
+function closeMigrateOverlay() {
+  if (!mainWindow || mainWindow.isDestroyed()) return
+  mainWindow.webContents.executeJavaScript(
+    `document.getElementById('dshl-migrate-overlay')?.remove()`,
+  ).catch(() => {})
+}
+
+function showMigrateDialog() {
+  openMigrateDialog()
+}
+
+/**
+ * 执行程序目录迁移：停止宿主 → 清理链接树 → 提示可移动 → 退出。
+ * 链接树不含用户数据，移动后首次启动自动重建；运行中删除不影响已加载模块。
+ */
+function performMigration() {
+  closeMigrateOverlay()
+  try {
+    // 1. 停止宿主，确保文件未被占用
+    killHost()
+    // 2. 清理受管链接树（只删链接，不碰 .dsh\ 下其它用户数据）
+    const nmDir = join(dataDir, 'profiles', 'node_modules')
+    if (existsSync(nmDir)) {
+      rmSync(nmDir, { recursive: true, force: true })
+    }
+    // 3. 提示用户可移动目录
+    dialog.showMessageBox({
+      type: 'info',
+      title: '程序目录迁移',
+      message: '链接树已清理，程序即将退出。',
+      detail:
+        `请将整个程序目录移动到新位置（推荐整体剪切/移动，或用 robocopy 复制）。\n` +
+        `移动后重新启动，链接树会自动重建，用户数据不会丢失。\n\n` +
+        `当前程序目录：${programDir}`,
+      buttons: ['知道了'],
+    })
+  } catch (error) {
+    dialog.showErrorBox(
+      '程序目录迁移失败',
+      String(error && error.message || error) + '\n\n请手动运行程序目录内的 .clean-links.bat 后再移动。',
+    )
+    return
+  }
+  // 4. 退出（before-quit 会再次 killHost，幂等）
+  app.quit()
 }
 
 function openDataDir() {
@@ -1200,5 +1309,12 @@ if (!app.requestSingleInstanceLock()) {
   // 「移动目录说明」覆盖层 IPC
   ipcMain.on('dshl:dialog-close-move', () => {
     closeMoveOverlay()
+  })
+  // 「程序目录迁移」覆盖层 IPC
+  ipcMain.on('dshl:migrate-cancel', () => {
+    closeMigrateOverlay()
+  })
+  ipcMain.on('dshl:migrate-confirm', () => {
+    performMigration()
   })
 }
