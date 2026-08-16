@@ -14,7 +14,7 @@
 const { app, BrowserWindow, Menu, dialog, shell, clipboard, ipcMain, Tray, nativeImage } = require('electron')
 const { spawn, execFile } = require('node:child_process')
 const { join, dirname } = require('node:path')
-const { mkdirSync, writeFileSync, existsSync, readFileSync } = require('node:fs')
+const { mkdirSync, writeFileSync, existsSync, readFileSync, readdirSync, lstatSync, rmSync } = require('node:fs')
 
 // ---------------------------------------------------------------- 路径解析
 
@@ -479,6 +479,9 @@ function writeDataReadme() {
     '配置 remoteUrl 后不再启动本地宿主。',
     '',
     '备份/迁移：退出程序后复制整个 data 目录到新位置，保持目录结构不变即可。',
+    '整个程序目录（绿色版解压目录）也支持整体移动；如用「复制」方式移动，',
+    '复制工具会展开 profiles\\node_modules 下的链接，启动器会在下次启动时自动清理重建，',
+    '无需手工处理。',
     '',
     '如需改到其他位置，请设置环境变量 DSH_HOME 指向目标目录后重新启动。',
     '',
@@ -486,6 +489,45 @@ function writeDataReadme() {
   try {
     writeFileSync(join(dataDir, 'README.txt'), text, 'utf8')
   } catch { /* 目录不可写时静默，后续启动检查会报错 */ }
+}
+
+/**
+ * 清理 data\profiles\node_modules 中被复制工具解引用成真实目录的残留:
+ * dsh 的 healProfilesModuleFallback 要求该目录下每个包条目都是指向安装闭包的
+ * junction;移动整个程序目录时,若用户用「复制」而非「剪切/移动」,复制工具会把
+ * junction 展开成真实目录,dsh 遇到真实目录会拒绝启动
+ * ("exists and is not a symlink")。这里在启动宿主前删除这些实体目录
+ * (仅限该受管链接树,不含用户数据),dsh 会在启动时按新位置重建全部链接;
+ * 悬空/指向旧位置的链接无需处理,dsh 自行重新指向。
+ */
+function healProfileModuleLinks() {
+  const nmDir = join(dataDir, 'profiles', 'node_modules')
+  let entries
+  try { entries = readdirSync(nmDir) } catch { return } // 首次运行尚无该目录
+  for (const name of entries) {
+    if (name.startsWith('@')) {
+      // scope 目录本身合法;其内部每个包条目才是链接
+      const scopeDir = join(nmDir, name)
+      let subs
+      try { subs = readdirSync(scopeDir) } catch { continue }
+      for (const sub of subs) {
+        const p = join(scopeDir, sub)
+        let st
+        try { st = lstatSync(p) } catch { continue }
+        if (!st.isSymbolicLink() && st.isDirectory()) {
+          try { rmSync(p, { recursive: true, force: true }) } catch { /* 保留失败项,交给宿主报错 */ }
+        }
+      }
+    } else {
+      // 顶层非 scope 包条目本应是链接;真实目录是复制残留
+      const p = join(nmDir, name)
+      let st
+      try { st = lstatSync(p) } catch { continue }
+      if (!st.isSymbolicLink() && st.isDirectory()) {
+        try { rmSync(p, { recursive: true, force: true }) } catch { /* 保留失败项,交给宿主报错 */ }
+      }
+    }
+  }
 }
 
 /**
@@ -497,6 +539,7 @@ function startHost() {
   return new Promise((resolve, reject) => {
     mkdirSync(logDir, { recursive: true })
     writeDataReadme()
+    healProfileModuleLinks()
 
     if (!existsSync(nodeExe)) {
       reject(new Error(`未找到捆绑的 Node 运行时：\n${nodeExe}\n\n请重新运行构建脚本 scripts\\build.ps1。`))

@@ -45,9 +45,9 @@ powershell -ExecutionPolicy Bypass -File scripts\build.ps1
 
 | 产物 | 说明 | 启动速度 |
 |---|---|---|
-| `DSHL Setup 0.1.0.exe` | NSIS 安装包（推荐装机） | 安装后秒启动 |
-| `DSHL-0.1.0-green.exe` | 绿色自解压单文件（推荐免安装） | 首次约 1 分钟，之后秒启动 |
-| `DSHL-0.1.0-win.zip` | 绿色目录版 | 解压一次后秒启动 |
+| `DSHL Setup 0.1.1.exe` | NSIS 安装包（推荐装机） | 安装后秒启动 |
+| `DSHL-0.1.1-green.exe` | 绿色自解压单文件（推荐免安装） | 首次约 1 分钟，之后秒启动 |
+| `DSHL-0.1.1-win.zip` | 绿色目录版 | 解压一次后秒启动 |
 
 端到端产物无需 Node、无需浏览器；最终用户双击即可。打包体积约 180-250MB
 （Electron 运行时 + 便携 Node + dsh 依赖闭包，属预期）。
@@ -61,6 +61,10 @@ powershell -ExecutionPolicy Bypass -File scripts\build.ps1
   用户数据保存在该子目录的 `data\` 下，持久保存。
 - **之后运行**：检测到已解压 → 直接启动（秒开），不再解压。
 - 复制 `green.exe` 到其他位置/机器首次运行时会就地重新解压，天然便携。
+- **移动整个解压目录**：支持整体剪切/移动；若用「复制」方式移动，复制工具会把
+  dsh 宿主维护的 `data\profiles\node_modules\` 链接展开成真实目录，导致宿主报
+  `exists and is not a symlink`——启动器会在启动宿主前自动清理这些残留并重建链接
+  （0.1.1 起），无需手工删除。
 - 实现：`scripts\green-stub.cs`（csc 编译，零外部依赖，已处理长路径）。
 
 ### 托盘与关闭行为
@@ -147,6 +151,11 @@ powershell -ExecutionPolicy Bypass -File scripts\build.ps1
   在 stdout 重定向时以 0xC0000005 崩溃，electron-builder 的模块收集器恰好用
   `powershell.exe -EncodedCommand` 包装 npm list；构建脚本会把收集器改为
   `pwsh.exe`（PowerShell 7，需已安装）。
+- **品牌补丁（中文文案定制）**：装完 dsh 闭包后，构建自动重打两处内置文案——
+  设置窗口 “Agent 预设” → “Agent”、“PTC 模式” → “代码模式”
+  （`build.ps1` 第 2.5 步，幂等，重复构建自动跳过）。dsh 升级会重置这些文件；
+  若新版文案变动导致补丁找不到目标字符串，构建会打印黄色跳过提示，
+  需同步更新 `build.ps1` 中的替换对。
 
 ### 冒烟验证结论（本机已实测）
 
