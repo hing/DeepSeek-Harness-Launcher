@@ -7,7 +7,7 @@
  */
 'use strict'
 
-const { cpSync, existsSync, rmSync } = require('node:fs')
+const { cpSync, existsSync, rmSync, copyFileSync } = require('node:fs')
 const { join, resolve } = require('node:path')
 
 exports.default = async function afterPack(context) {
@@ -24,6 +24,18 @@ exports.default = async function afterPack(context) {
     }
     rmSync(dst, { recursive: true, force: true })
     cpSync(src, dst, { recursive: true })
+    console.log(`afterPack: 已复制 ${src} -> ${dst}`)
+  }
+
+  // 移动目录辅助脚本：复制到程序目录根（与 DSHL.exe 同级），用户移动目录前双击运行
+  for (const file of ['clean-links.ps1', 'clean-links.bat']) {
+    const src = join(projectRoot, 'app', 'build', file)
+    const dst = join(appOutDir, file)
+    if (!existsSync(src)) {
+      console.warn(`afterPack: 缺失 ${src}，跳过`)
+      continue
+    }
+    copyFileSync(src, dst)
     console.log(`afterPack: 已复制 ${src} -> ${dst}`)
   }
 }
