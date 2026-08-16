@@ -941,12 +941,12 @@ const DATA_DIR_DIALOG_HTML = `<div id="dshl-data-overlay">
     <div class="copy">
       <div class="section">
         <p><b>内核数据目录（.dsh）</b></p>
-        <p>包含 DeepSeek Harness 的全部运行数据（API Key、会话、插件、附件等）</p>
+        <p>包含 DeepSeek Harness 内核的运行数据（API Key、会话、插件、附件等）</p>
         <p class="path" id="dsh-path"></p>
       </div>
       <div class="section">
         <p><b>启动器数据目录（.launcher）</b></p>
-        <p>包含启动器 Electron 自身的数据（缓存、Local Storage 等）</p>
+        <p>包含启动器 Electron 自身的运行数据（缓存、Local Storage 等）</p>
         <p class="path" id="launcher-path"></p>
       </div>
       <div class="warn">
@@ -992,7 +992,7 @@ const MIGRATE_DIALOG_HTML = `<div id="dshl-migrate-overlay">
 #dshl-migrate-overlay { position: fixed; inset: 0; z-index: 2147483647; display: flex;
   align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.24);
   backdrop-filter: blur(2px); font: 14px/22px "Segoe UI", system-ui, sans-serif; color: #0f1115; }
-#dshl-migrate-overlay .dshl-card { width: 600px; max-width: calc(100vw - 48px); box-sizing: border-box;
+#dshl-migrate-overlay .dshl-card { width: 620px; max-width: calc(100vw - 48px); box-sizing: border-box;
   padding: 28px; background: #ffffff; border-radius: 24px; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18); }
 #dshl-migrate-overlay .head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 #dshl-migrate-overlay .title { margin: 0; font-size: 20px; line-height: 28px; font-weight: 500; color: #0f1115; }
@@ -1003,8 +1003,8 @@ const MIGRATE_DIALOG_HTML = `<div id="dshl-migrate-overlay">
 #dshl-migrate-overlay .copy b { color: #0f1115; font-weight: 500; }
 #dshl-migrate-overlay .copy .steps { margin-top: 12px; padding-left: 0; list-style: none; }
 #dshl-migrate-overlay .copy .steps li { margin-top: 10px; }
-#dshl-migrate-overlay .copy .steps .num { display: inline-block; width: 20px; height: 20px; line-height: 20px;
-  text-align: center; border-radius: 50%; background: #0f1115; color: #fff; font-size: 12px; margin-right: 8px; }
+#dshl-migrate-overlay .copy .steps .num { display: inline-block; width: 18px; height: 18px; line-height: 18px;
+  text-align: center; border-radius: 50%; background: #0f1115; color: #fff; font-size: 10px; margin-right: 8px; }
 #dshl-migrate-overlay .copy .warn { background: #fff7e6; border: 1px solid #ffe0a3; border-radius: 10px;
   padding: 10px 14px; color: #8a5a00; margin-top: 20px; }
 #dshl-migrate-overlay .copy .warn b { color: #8a5a00; }
