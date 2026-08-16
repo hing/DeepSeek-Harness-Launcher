@@ -38,7 +38,7 @@ contextBridge.exposeInMainWorld('dshlWin', {
   },
 })
 
-// 数据目录与迁移覆盖层桥
+// 「数据目录说明」覆盖层桥
 contextBridge.exposeInMainWorld('dshlDialog', {
   openDataDir: () => ipcRenderer.send('dshl:dialog-open-data-dir'),
   close: () => ipcRenderer.send('dshl:dialog-close'),
