@@ -1,7 +1,7 @@
 {
   "name": "dshl",
   "productName": "DSHL",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "DeepSeek Harness 一键启动器：捆绑 Node 运行时与 dsh 依赖闭包，Electron 窗口加载 Web UI，无需安装 Node、无需浏览器。",
   "main": "main.js",
   "author": "DSHL",

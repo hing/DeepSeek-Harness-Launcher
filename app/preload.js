@@ -8,7 +8,7 @@
 const { contextBridge, ipcRenderer } = require('electron')
 
 contextBridge.exposeInMainWorld('dshl', {
-  /** 用户数据目录（程序目录内 data\）。 */
+  /** 用户数据目录（程序目录内 .dsh\）。 */
   getDataDir: () => process.env.DSH_HOME || '',
   /** 宿主就绪 URL（启动后填充）。 */
   getHostUrl: () => (globalThis.__DSHL_HOST_URL__ || '').toString(),

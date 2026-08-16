@@ -3,10 +3,11 @@
  *
  * 架构：Electron 只做窗口壳。DSH 宿主（dsh web）跑在捆绑的官方 Node 进程里，
  * 监听 127.0.0.1 端口（默认自动选空闲端口，可用 --port 参数或
- * data\launcher.json 固定）；本进程解析宿主打印的 `dsh web: <url>` 就绪行，
+ * .dsh\launcher.json 固定）；本进程解析宿主打印的 `dsh web: <url>` 就绪行，
  * 然后用 BrowserWindow 加载该 URL，窗口标题显示当前服务地址。
  *
- * 用户数据目录默认位于程序目录下的 `data\`（即开即用、绿色便携）；
+ * 用户数据目录默认位于程序目录下的 `.dsh\`（即开即用、绿色便携）；
+ * Electron 自身数据（缓存等）位于程序目录下 `.launcher\`，不写系统 AppData；
  * 首次启动弹出数据目录指引对话框。
  */
 'use strict'
@@ -14,7 +15,7 @@
 const { app, BrowserWindow, Menu, dialog, shell, clipboard, ipcMain, Tray, nativeImage } = require('electron')
 const { spawn, execFile } = require('node:child_process')
 const { join, dirname } = require('node:path')
-const { mkdirSync, writeFileSync, existsSync, readFileSync, readdirSync, lstatSync, rmSync } = require('node:fs')
+const { mkdirSync, writeFileSync, existsSync, readFileSync, readdirSync, lstatSync, rmSync, renameSync } = require('node:fs')
 
 // ---------------------------------------------------------------- 路径解析
 
@@ -29,11 +30,53 @@ const dshDir = isPackaged ? join(process.resourcesPath, 'dsh') : join(devRoot, '
 const programDir = isPackaged
   ? (process.env.PORTABLE_EXECUTABLE_DIR || dirname(process.execPath))
   : devRoot
-const dataDir = join(programDir, 'data')
+// 用户数据目录：程序目录内 `.dsh`（即开即用、绿色便携）。旧版本为 data\，
+// 首次启动检测到旧目录时自动迁移。
+const dataDir = join(programDir, '.dsh')
+const legacyDataDir = join(programDir, 'data')
 const logDir = join(dataDir, 'logs')
 const nodeExe = join(nodeDir, 'node.exe')
 const dshBin = join(dshDir, 'node_modules', '@deepseek-ai', 'dsh', 'lib', 'bin.js')
 const firstRunMarker = join(dataDir, '.first-run-done')
+
+// Electron 用户数据（缓存、Local Storage 等）从系统 AppData 改到程序目录内 .launcher，
+// 保持绿色便携（程序目录整体移动/复制即带走全部数据）。必须在 ready 前设置。
+const launcherUserData = join(programDir, '.launcher')
+app.setPath('userData', launcherUserData)
+
+/**
+ * 旧版目录自动迁移：data\ -> .dsh\（用户数据）、系统 AppData\DeepSeek Harness Launcher -> .launcher\。
+ * 迁移仅在新位置不存在且旧位置存在时执行；失败（跨盘/占用）时静默放弃，新目录重新初始化。
+ */
+function migrateLegacyDirs() {
+  try {
+    if (!existsSync(dataDir) && existsSync(legacyDataDir)) {
+      const stat = lstatSync(legacyDataDir)
+      if (stat.isDirectory() && !stat.isSymbolicLink()) {
+        rmSync(dataDir, { recursive: true, force: true })
+        renameSync(legacyDataDir, dataDir)
+        console.log(`[dshl] 已迁移用户数据 ${legacyDataDir} -> ${dataDir}`)
+      }
+    }
+  } catch (error) {
+    console.warn(`[dshl] 用户数据目录迁移失败（将使用全新 ${dataDir}）：${error && error.message || error}`)
+  }
+  try {
+    if (!existsSync(launcherUserData)) {
+      const legacyAppData = join(app.getPath('appData'), 'DeepSeek Harness Launcher')
+      if (existsSync(legacyAppData)) {
+        const st = lstatSync(legacyAppData)
+        if (st.isDirectory() && !st.isSymbolicLink()) {
+          mkdirSync(programDir, { recursive: true })
+          renameSync(legacyAppData, launcherUserData)
+          console.log(`[dshl] 已迁移 Electron 数据 ${legacyAppData} -> ${launcherUserData}`)
+        }
+      }
+    }
+  } catch (error) {
+    console.warn(`[dshl] Electron 数据目录迁移失败（将使用全新 ${launcherUserData}）：${error && error.message || error}`)
+  }
+}
 
 // ---------------------------------------------------------------- 配置解析
 
@@ -59,7 +102,7 @@ function readLauncherConfig() {
 }
 
 /**
- * 解析监听端口：命令行 `--port` > `data\launcher.json` 的 `port` > 0（OS 自动选空闲端口）。
+ * 解析监听端口：命令行 `--port` > `.dsh\launcher.json` 的 `port` > 0（OS 自动选空闲端口）。
  * @returns {number} 1-65535 的有效端口，或 0 表示自动。
  */
 function resolvePort() {
@@ -95,7 +138,7 @@ function normalizeRemoteUrl(raw) {
 }
 
 /**
- * 解析远程连接目标：命令行 `--remote` > `data\launcher.json` 的 `remoteUrl`。
+ * 解析远程连接目标：命令行 `--remote` > `.dsh\launcher.json` 的 `remoteUrl`。
  * @returns {{ url: string, insecure: boolean } | undefined} 配置了远程地址时返回目标，否则 undefined（本地模式）。
  */
 function resolveRemote() {
@@ -478,18 +521,21 @@ function writeDataReadme() {
     '远程连接优先级：启动参数 --remote <url> > launcher.json 的 remoteUrl；',
     '配置 remoteUrl 后不再启动本地宿主。',
     '',
-    '备份/迁移：退出程序后复制整个 data 目录到新位置，保持目录结构不变即可。',
+    '备份/迁移：退出程序后复制整个 .dsh 目录到新位置，保持目录结构不变即可。',
     '',
     '【移动整个程序目录（绿色版解压目录）】',
-    '  重要：data\\profiles\\node_modules 是 dsh 自动管理的链接树（不含用户数据，',
+    '  重要：.dsh\\profiles\\node_modules 是 dsh 自动管理的链接树（不含用户数据，',
     '  删除后下次启动自动重建）。跨盘复制/移动目录时，Windows 资源管理器会跟随',
     '  这些链接反复复制 resources\\dsh 的内容，导致进度条卡死。',
     '  正确做法（任选其一）：',
     '  0) 双击程序目录内的 clean-links.bat，自动删除链接树后再移动（最省事）；',
-    '  1) 移动前先删除 data\\profiles\\node_modules（启动时自动重建），再移动；',
+    '  1) 移动前先删除 .dsh\\profiles\\node_modules（启动时自动重建），再移动；',
     '  2) 或：同一盘符内剪切移动（瞬间完成，不受链接影响）；',
     '  3) 或：用 robocopy 复制：robocopy "源目录" "目标目录" /E /SL /XJ /R:1 /W:1',
-    '  移动后首次启动，启动器会自动重建全部链接（v0.1.1 起）。',
+    '  移动后首次启动，启动器会自动重建全部链接。',
+    '',
+    'Electron 自身的数据（缓存、Local Storage 等）保存在程序目录内 .launcher\\，',
+    '随程序目录一起移动/复制，不写入系统 AppData。',
     '',
     '如需改到其他位置，请设置环境变量 DSH_HOME 指向目标目录后重新启动。',
     '',
@@ -500,7 +546,7 @@ function writeDataReadme() {
 }
 
 /**
- * 清理 data\profiles\node_modules 中被复制工具解引用成真实目录的残留:
+ * 清理 .dsh\profiles\node_modules 中被复制工具解引用成真实目录的残留:
  * dsh 的 healProfilesModuleFallback 要求该目录下每个包条目都是指向安装闭包的
  * junction;移动整个程序目录时,若用户用「复制」而非「剪切/移动」,复制工具会把
  * junction 展开成真实目录,dsh 遇到真实目录会拒绝启动
@@ -929,7 +975,7 @@ const DATA_DIR_DIALOG_HTML = `<div id="dshl-data-overlay">
     <div class="copy">
       <p>DeepSeek Harness 的全部用户数据（API Key 设置、会话、插件、附件）默认保存在程序目录内的 <b>data</b> 目录：</p>
       <p id="path" style="word-break: break-all; user-select: text;"></p>
-      <p>备份/迁移：退出程序后复制整个 data 目录到新位置即可。</p>
+      <p>备份/迁移：退出程序后复制整个 .dsh 目录到新位置即可。</p>
       <p>如需改到其他位置，设置环境变量 <b>DSH_HOME</b> 指向目标目录后重新启动。</p>
     </div>
     <div class="actions">
@@ -1001,13 +1047,14 @@ const MOVE_GUIDE_DIALOG_HTML = `<div id="dshl-move-overlay">
   <div class="body">
     <div class="copy">
       <p><b>跨盘移动整个程序目录</b>（如把绿色版解压目录从 E 盘复制到 D 盘）时，
-         进度条可能长时间卡死。原因是 <b>data\\profiles\\node_modules</b> 是 dsh
+         进度条可能长时间卡死。原因是 <b>.dsh\\profiles\\node_modules</b> 是 dsh
          自动维护的链接树（指向 resources\\dsh 下的真实包）；资源管理器会跟随
          这些链接反复复制目标内容，导致卡死。</p>
       <p><b>该链接树不含任何用户数据</b>，删除后下次启动会自动重建。请按任一方式移动：</p>
-      <p>① 移动前先删除 <code>data\\profiles\\node_modules</code>（推荐）<br>
-         ② 同一盘符内剪切移动（瞬间完成，不受影响）<br>
-         ③ 使用命令行复制：<code>robocopy "源目录" "目标目录" /E /SL /XJ /R:1 /W:1</code></p>
+      <p>① 双击程序目录内 <code>clean-links.bat</code> 自动清理（推荐）<br>
+         ② 移动前先删除 <code>.dsh\\profiles\\node_modules</code><br>
+         ③ 同一盘符内剪切移动（瞬间完成，不受影响）<br>
+         ④ 使用命令行复制：<code>robocopy "源目录" "目标目录" /E /SL /XJ /R:1 /W:1</code></p>
       <p>移动完成后首次启动，启动器会自动重建全部链接。</p>
     </div>
     <div class="actions">
@@ -1101,6 +1148,9 @@ if (!app.requestSingleInstanceLock()) {
       mainWindow.focus()
     }
   })
+
+  // 旧版目录迁移（data\ -> .dsh\、AppData -> .launcher\）：需在 any 窗口/userData 使用前执行
+  migrateLegacyDirs()
 
   app.whenReady().then(async () => {
     // 窗口保持简洁：移除应用菜单栏，所有操作入口收进托盘右键菜单

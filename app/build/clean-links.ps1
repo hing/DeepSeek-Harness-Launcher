@@ -1,6 +1,6 @@
 ﻿# DSHL 移动目录辅助脚本
 #
-# 作用：删除 data\profiles\node_modules 受管链接树（不含任何用户数据，下次启动自动重建），
+# 作用：删除 .dsh\profiles\node_modules 受管链接树（不含任何用户数据，下次启动自动重建），
 #       以便安全地跨盘移动整个程序目录。
 #
 # 为什么需要：跨盘移动/复制目录时，Windows 资源管理器会跟随该链接树（junction）
@@ -11,13 +11,13 @@
 #   2) 右键本文件 →「使用 PowerShell 运行」；或
 #   3) 命令行：powershell -ExecutionPolicy Bypass -File clean-links.ps1
 #
-# 移动完成后：首次启动启动器会自动重建全部链接（v0.1.1 起）。
+# 移动完成后：首次启动启动器会自动重建全部链接。
 
 $ErrorActionPreference = 'Stop'
 
 # 脚本位于程序目录根（与 DSHL.exe 同级）
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
-$linkTree = Join-Path $root 'data\profiles\node_modules'
+$linkTree = Join-Path $root '.dsh\profiles\node_modules'
 
 if (-not (Test-Path $linkTree)) {
     Write-Host "未找到受管链接树：$linkTree" -ForegroundColor Yellow

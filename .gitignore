@@ -6,6 +6,8 @@ node_modules/
 /.DSH/
 
 # 运行时用户数据（程序目录内）
+/.dsh/
+/.launcher/
 /data/
 
 # 杂项
