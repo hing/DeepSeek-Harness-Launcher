@@ -9,7 +9,8 @@
  * 用户数据目录默认位于程序目录下的 `.dsh\`（即开即用、绿色便携）；
  * Electron 自身数据（缓存等）位于程序目录下 `.launcher\`，不写系统 AppData；
  * 首次启动弹出数据目录指引对话框。
- */'use strict'
+ */
+'use strict'
 
 const { app, BrowserWindow, Menu, dialog, shell, clipboard, ipcMain, Tray, nativeImage } = require('electron')
 const { spawn, execFile } = require('node:child_process')
@@ -132,7 +133,6 @@ let tray = null
 
 // ---------------------------------------------------------------- 远程连接（运行时切换）
 
-/** 「连接远程服务」输入对话框的 HTML（内嵌；按 DSH「添加 API Key」弹窗（DeepSeekOnboardingDialog + ProviderEditor）精确复刻）。 */
 /**
  * 「连接远程服务」对话框（注入到主窗口页面的 DOM 覆盖层）。
  * 按 DSH「添加 API Key」弹窗（DeepSeekOnboardingDialog + ProviderEditor）精确复刻：
@@ -314,8 +314,6 @@ function closePortOverlay() {
   ).catch(() => {})
 }
 
-/** 读取 launcher.json 配置见文件顶部 readLauncherConfig。 */
-
 /** 写回 launcher.json：patch 值为 null 表示删除该键。 */
 function writeLauncherConfig(patch) {
   const cfg = readLauncherConfig()
@@ -400,7 +398,6 @@ function openInBrowser() {
     })
   })
 }
-
 
 /** 切换到指定远程地址（校验、更新状态、主窗口导航、重建菜单）。 */
 function connectToUrl(raw) {
@@ -984,7 +981,7 @@ function closeDataDirOverlay() {
 }
 
 /**
- * 「程序目录迁移」对话框（托盘菜单弹窗；注入到主窗口页面的 DOM 覆盖层）。
+ * 「程序备份迁移」对话框（托盘菜单弹窗；注入到主窗口页面的 DOM 覆盖层）。
  * 说明迁移流程；用户确认后自动停止服务、完成迁移准备并退出。
  */
 const MIGRATE_DIALOG_HTML = `<div id="dshl-migrate-overlay">
@@ -1067,7 +1064,7 @@ function closeMigrateOverlay() {
   ).catch(() => {})
 }
 
-/** 托盘菜单入口：程序目录迁移。 */
+/** 托盘菜单入口：程序备份迁移。 */
 function showMigrateDialog() {
   openMigrateDialog()
 }

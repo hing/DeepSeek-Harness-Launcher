@@ -1,6 +1,6 @@
-﻿# 构建绿色版自解压 exe：
+# 构建绿色版自解压 exe：
 #   [stub exe] + [win-unpacked zip 载荷] + [8 字节小端载荷长度]
-# 产物：build\dist\DSHL-0.1.0-green.exe
+# 产物：build\dist\DSHL-<版本>-green.exe
 param(
     [string]$Version = '0.1.0'
 )

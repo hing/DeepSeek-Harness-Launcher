@@ -1,18 +1,11 @@
 /**
- * DSHL preload — 通过 contextBridge 暴露最小化的启动器信息，
- * 供未来渲染层（欢迎页/状态页）使用；当前主窗口加载的是 DSH 自身 UI，
- * 此桥保持可用但不影响其运行。
+ * DSHL preload — 通过 contextBridge 暴露启动器覆盖层所需的 IPC 桥：
+ * 连接远程服务、自绘窗口按钮、数据目录说明/程序备份迁移、设置服务端口。
+ * 主窗口加载的是 DSH 自身 UI，这些桥只被启动器注入的覆盖层脚本调用。
  */
 'use strict'
 
 const { contextBridge, ipcRenderer } = require('electron')
-
-contextBridge.exposeInMainWorld('dshl', {
-  /** 用户数据目录（程序目录内 .dsh\）。 */
-  getDataDir: () => process.env.DSH_HOME || '',
-  /** 宿主就绪 URL（启动后填充）。 */
-  getHostUrl: () => (globalThis.__DSHL_HOST_URL__ || '').toString(),
-})
 
 // 「连接远程服务」输入覆盖层使用的桥
 contextBridge.exposeInMainWorld('dshlRemote', {
@@ -44,7 +37,7 @@ contextBridge.exposeInMainWorld('dshlDialog', {
   close: () => ipcRenderer.send('dshl:dialog-close'),
 })
 
-// 「程序目录迁移」确认桥
+// 「程序备份迁移」确认桥
 contextBridge.exposeInMainWorld('dshlMigrate', {
   confirm: () => ipcRenderer.send('dshl:migrate-confirm'),
   cancel: () => ipcRenderer.send('dshl:migrate-cancel'),

@@ -3,7 +3,6 @@
 # 步骤：
 #   1. 下载便携版 Node.js（nodejs.org 官方 zip）到 build\node\
 #   2. npm 安装 @deepseek-ai/dsh 依赖闭包（含前端 dist）到 build\dsh\
-#   2.5 打品牌补丁（覆盖 DSH 内置中文文案：Agent 预设 -> Agent、PTC 模式 -> 代码模式）
 #   3. 安装 Electron 构建依赖并 electron-builder 打包 Windows 产物
 #
 # 用法：  powershell -ExecutionPolicy Bypass -File scripts\build.ps1 [-NodeVersion v24.19.0] [-SkipNode] [-SkipDsh] [-SkipPack] [-SkipGreen]
@@ -78,32 +77,6 @@ if (-not $SkipDsh) {
         Pop-Location
     }
 }
-
-# ---- 2.5 品牌补丁 ----
-# 覆盖 DSH 内置中文文案（Agent 预设 -> Agent、PTC 模式 -> 代码模式）。dsh 升级会
-# 重置闭包内的这两个文件，因此每次构建都必须重打；补丁幂等，重复执行自动跳过。
-Write-Host "[2.5/3] 打品牌补丁（Agent 预设 -> Agent、PTC 模式 -> 代码模式）..."
-function Patch-DshCopy {
-    param([string]$Path, [string]$Old, [string]$New, [string]$Label)
-    if (-not (Test-Path -LiteralPath $Path)) {
-        Write-Host "    跳过（文件不存在）：$Label" -ForegroundColor Yellow
-        return
-    }
-    $content = Get-Content -LiteralPath $Path -Raw -Encoding UTF8
-    if (-not $content.Contains($Old)) {
-        Write-Host "    跳过（未找到目标文案，可能已打过补丁或 dsh 已升级）：$Label" -ForegroundColor Yellow
-        return
-    }
-    $updated = $content.Replace($Old, $New)
-    [System.IO.File]::WriteAllText($Path, $updated, (New-Object System.Text.UTF8Encoding($false)))
-    Write-Host "    已打补丁：$Label"
-}
-$agentPresetClient = Join-Path $dshDir 'node_modules\@deepseek-ai\dsh-client-ui-agent-preset\lib\client.js'
-$codePresetYml = Join-Path $dshDir 'node_modules\@deepseek-ai\dsh\config\agent-presets\code\preset.yml'
-Patch-DshCopy $agentPresetClient 'title: "Agent 预设"' 'title: "Agent"' 'client.js title（设置窗口标题）'
-Patch-DshCopy $agentPresetClient 'nav: "Agent 预设"' 'nav: "Agent"' 'client.js nav（导航项）'
-Patch-DshCopy $agentPresetClient 'presetCodeName: "PTC 模式"' 'presetCodeName: "代码模式"' 'client.js presetCodeName'
-Patch-DshCopy $codePresetYml 'name: PTC 模式' 'name: 代码模式' 'code/preset.yml name'
 
 # ---- 3. 图标 ----
 & (Join-Path $root 'scripts\gen-icon.ps1')
