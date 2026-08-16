@@ -992,7 +992,7 @@ const MIGRATE_DIALOG_HTML = `<div id="dshl-migrate-overlay">
 #dshl-migrate-overlay { position: fixed; inset: 0; z-index: 2147483647; display: flex;
   align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.24);
   backdrop-filter: blur(2px); font: 14px/22px "Segoe UI", system-ui, sans-serif; color: #0f1115; }
-#dshl-migrate-overlay .dshl-card { width: 630px; max-width: calc(100vw - 48px); box-sizing: border-box;
+#dshl-migrate-overlay .dshl-card { width: 640px; max-width: calc(100vw - 48px); box-sizing: border-box;
   padding: 28px; background: #ffffff; border-radius: 24px; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18); }
 #dshl-migrate-overlay .head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 #dshl-migrate-overlay .title { margin: 0; font-size: 20px; line-height: 28px; font-weight: 500; color: #0f1115; }
@@ -1024,8 +1024,8 @@ const MIGRATE_DIALOG_HTML = `<div id="dshl-migrate-overlay">
   <div class="body">
     <div class="copy">
       <p>本程序支持便携化运行，可以将整个程序目录移动到其它位置。</p>
-      <p>但是，<b>不能直接移动/复制程序目录</b>：程序运行时会在
-         <b>.dsh\\profiles\\node_modules</b> 维护一套指向安装目录的受管链接树。
+      <p>但是<b>不能直接移动/复制程序目录</b>：</p>
+      <p>程序运行时会在 <b>.dsh\\profiles\\node_modules</b> 维护一套指向安装目录的受管链接树。
          直接移动/复制时，资源管理器会跟随这些链接反复复制
          <b>resources\\dsh</b> 的内容，导致进度条卡死、目录损坏。</p>
       <p>必须按以下步骤操作，才能保证程序完好备份/迁移：</p>
