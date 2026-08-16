@@ -479,9 +479,16 @@ function writeDataReadme() {
     '配置 remoteUrl 后不再启动本地宿主。',
     '',
     '备份/迁移：退出程序后复制整个 data 目录到新位置，保持目录结构不变即可。',
-    '整个程序目录（绿色版解压目录）也支持整体移动；如用「复制」方式移动，',
-    '复制工具会展开 profiles\\node_modules 下的链接，启动器会在下次启动时自动清理重建，',
-    '无需手工处理。',
+    '',
+    '【移动整个程序目录（绿色版解压目录）】',
+    '  重要：data\\profiles\\node_modules 是 dsh 自动管理的链接树（不含用户数据，',
+    '  删除后下次启动自动重建）。跨盘复制/移动目录时，Windows 资源管理器会跟随',
+    '  这些链接反复复制 resources\\dsh 的内容，导致进度条卡死。',
+    '  正确做法（任选其一）：',
+    '  1) 推荐：移动前先删除 data\\profiles\\node_modules（启动时自动重建），再移动；',
+    '  2) 或：同一盘符内剪切移动（瞬间完成，不受链接影响）；',
+    '  3) 或：用 robocopy 复制：robocopy "源目录" "目标目录" /E /SL /XJ /R:1 /W:1',
+    '  移动后首次启动，启动器会自动重建全部链接（v0.1.1 起）。',
     '',
     '如需改到其他位置，请设置环境变量 DSH_HOME 指向目标目录后重新启动。',
     '',
@@ -723,6 +730,7 @@ function buildTrayMenu() {
     { label: '打开数据目录', click: openDataDir },
     { label: '打开日志目录', click: openLogDir },
     { label: '数据目录说明…', click: showDataDirDialog },
+    { label: '移动目录说明…', click: showMoveGuideDialog },
     { type: 'separator' },
     { label: '关于', click: showAboutDialog },
     { label: '退出', click: () => app.quit() },
@@ -956,6 +964,81 @@ function showDataDirDialog() {
   openDataDirDialog()
 }
 
+/**
+ * 「移动目录说明」对话框（注入到主窗口页面的 DOM 覆盖层）。
+ * 说明跨盘移动目录的正确做法，与「数据目录说明」弹窗同风格。
+ */
+const MOVE_GUIDE_DIALOG_HTML = `<div id="dshl-move-overlay">
+<style>
+#dshl-move-overlay { position: fixed; inset: 0; z-index: 2147483647; display: flex;
+  align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(2px); font: 14px/22px "Segoe UI", system-ui, sans-serif; color: #0f1115; }
+#dshl-move-overlay .dshl-card { width: 520px; max-width: calc(100vw - 48px); box-sizing: border-box;
+  padding: 28px; background: #ffffff; border-radius: 24px; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18); }
+#dshl-move-overlay .head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+#dshl-move-overlay .title { margin: 0; font-size: 20px; line-height: 28px; font-weight: 500; color: #0f1115; }
+#dshl-move-overlay .body { margin-top: 20px; }
+#dshl-move-overlay .copy { font-size: 14px; line-height: 24px; color: #61666b; }
+#dshl-move-overlay .copy p { margin: 0; }
+#dshl-move-overlay .copy p + p { margin-top: 12px; }
+#dshl-move-overlay .copy b { color: #0f1115; font-weight: 500; }
+#dshl-move-overlay .copy code { background: #f1f3f5; border-radius: 6px; padding: 1px 6px;
+  font: 12px/20px Consolas, monospace; color: #0f1115; word-break: break-all; }
+#dshl-move-overlay .actions { display: flex; justify-content: flex-end; margin-top: 24px; gap: 8px; }
+#dshl-move-overlay button { box-sizing: border-box; display: inline-flex; align-items: center;
+  justify-content: center; height: 36px; padding: 0 14px; border-radius: 18px;
+  font: inherit; font-size: 14px; line-height: 22px; cursor: pointer;
+  background: transparent; color: #0f1115; border: 1px solid rgba(0, 0, 0, 0.1); }
+#dshl-move-overlay button:hover { background: rgba(38, 49, 72, 0.06); }
+#dshl-move-overlay button.primary { background: #0f1115; color: #ffffff; border: none; min-width: 120px; }
+#dshl-move-overlay button.primary:hover { background: #43454a; }
+</style>
+<div class="dshl-card">
+  <div class="head">
+    <h2 class="title">移动目录说明</h2>
+  </div>
+  <div class="body">
+    <div class="copy">
+      <p><b>跨盘移动整个程序目录</b>（如把绿色版解压目录从 E 盘复制到 D 盘）时，
+         进度条可能长时间卡死。原因是 <b>data\\profiles\\node_modules</b> 是 dsh
+         自动维护的链接树（指向 resources\\dsh 下的真实包）；资源管理器会跟随
+         这些链接反复复制目标内容，导致卡死。</p>
+      <p><b>该链接树不含任何用户数据</b>，删除后下次启动会自动重建。请按任一方式移动：</p>
+      <p>① 移动前先删除 <code>data\\profiles\\node_modules</code>（推荐）<br>
+         ② 同一盘符内剪切移动（瞬间完成，不受影响）<br>
+         ③ 使用命令行复制：<code>robocopy "源目录" "目标目录" /E /SL /XJ /R:1 /W:1</code></p>
+      <p>移动完成后首次启动，启动器会自动重建全部链接。</p>
+    </div>
+    <div class="actions">
+      <button id="ok" class="primary">知道了</button>
+    </div>
+  </div>
+</div>
+</div>`
+
+/** 打开「移动目录说明」覆盖层（先显示主窗口；已打开则忽略）。 */
+function openMoveGuideDialog() {
+  showMainWindow()
+  injectIntoMain(`(() => {
+    if (document.getElementById('dshl-move-overlay')) return
+    document.body.insertAdjacentHTML('beforeend', ${JSON.stringify(MOVE_GUIDE_DIALOG_HTML)})
+    const overlay = document.getElementById('dshl-move-overlay')
+    overlay.querySelector('#ok').addEventListener('click', () => window.dshlDialog.closeMove())
+  })()`)
+}
+
+/** 关闭「移动目录说明」覆盖层。 */
+function closeMoveOverlay() {
+  if (!mainWindow || mainWindow.isDestroyed()) return
+  mainWindow.webContents.executeJavaScript(
+    `document.getElementById('dshl-move-overlay')?.remove()`,
+  ).catch(() => {})
+}
+
+function showMoveGuideDialog() {
+  openMoveGuideDialog()
+}
+
 function openDataDir() {
   shell.openPath(dataDir).then((err) => {
     if (err) dialog.showErrorBox('无法打开目录', err)
@@ -994,10 +1077,14 @@ function reconnectRemote() {
   }
 }
 
+/** 首次启动数据目录说明关闭后，接着弹移动目录说明（标志位）。 */
+let firstRunDataDialogClosed = false
+
 function showFirstRunGuidance() {
   if (existsSync(firstRunMarker)) return
   try { writeFileSync(firstRunMarker, new Date().toISOString(), 'utf8') } catch { /* 忽略 */ }
-  // 首次启动提示：等待窗口显示后注入（页面就绪后立即弹出）
+  firstRunDataDialogClosed = true
+  // 首次启动提示：先弹数据目录说明，关闭后接着弹移动目录说明
   setTimeout(() => showDataDirDialog(), 800)
 }
 
@@ -1094,5 +1181,14 @@ if (!app.requestSingleInstanceLock()) {
   ipcMain.on('dshl:dialog-open-data-dir', () => openDataDir())
   ipcMain.on('dshl:dialog-close', () => {
     closeDataOverlay()
+    // 首次启动：数据目录说明关闭后，接着弹移动目录说明
+    if (firstRunDataDialogClosed) {
+      firstRunDataDialogClosed = false
+      setTimeout(() => showMoveGuideDialog(), 400)
+    }
+  })
+  // 「移动目录说明」覆盖层 IPC
+  ipcMain.on('dshl:dialog-close-move', () => {
+    closeMoveOverlay()
   })
 }

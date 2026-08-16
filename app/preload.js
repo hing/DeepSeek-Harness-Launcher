@@ -38,10 +38,11 @@ contextBridge.exposeInMainWorld('dshlWin', {
   },
 })
 
-// 数据目录说明覆盖层桥
+// 数据目录说明/移动目录说明覆盖层桥
 contextBridge.exposeInMainWorld('dshlDialog', {
   openDataDir: () => ipcRenderer.send('dshl:dialog-open-data-dir'),
   close: () => ipcRenderer.send('dshl:dialog-close'),
+  closeMove: () => ipcRenderer.send('dshl:dialog-close-move'),
 })
 
 // 「设置服务端口」覆盖层桥
