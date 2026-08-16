@@ -1025,8 +1025,8 @@ const MIGRATE_DIALOG_HTML = `<div id="dshl-migrate-overlay">
     <div class="copy">
       <p>本程序支持便携化运行，可以将整个程序目录移动到其它位置。</p>
       <p>但是<b>不能直接移动/复制程序目录</b>：</p>
-      <p>程序运行时会在 <b>.dsh\\profiles\\node_modules</b> 维护一套指向安装目录的受管链接树。
-         直接移动/复制时，资源管理器会跟随这些链接反复复制内容，
+      <p>程序运行时会在 <b>.dsh\\profiles\\node_modules</b> 维护一套指向安装目录的受管链接树。</p>
+      <p>直接移动/复制时，资源管理器会跟随这些链接反复复制内容，
          导致进度条卡死、目录损坏。</p>
       <p>必须按以下步骤操作，才能保证程序完好备份/迁移：</p>
       <ul class="steps">
