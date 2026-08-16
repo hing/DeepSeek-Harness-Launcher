@@ -38,14 +38,13 @@ contextBridge.exposeInMainWorld('dshlWin', {
   },
 })
 
-// 数据目录说明/移动目录说明覆盖层桥
+// 数据目录与迁移覆盖层桥
 contextBridge.exposeInMainWorld('dshlDialog', {
   openDataDir: () => ipcRenderer.send('dshl:dialog-open-data-dir'),
   close: () => ipcRenderer.send('dshl:dialog-close'),
-  closeMove: () => ipcRenderer.send('dshl:dialog-close-move'),
 })
 
-// 「程序目录迁移」覆盖层桥
+// 「程序目录迁移」确认桥
 contextBridge.exposeInMainWorld('dshlMigrate', {
   confirm: () => ipcRenderer.send('dshl:migrate-confirm'),
   cancel: () => ipcRenderer.send('dshl:migrate-cancel'),
