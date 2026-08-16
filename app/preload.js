@@ -40,7 +40,7 @@ contextBridge.exposeInMainWorld('dshlWin', {
 
 // 「数据目录说明」覆盖层桥
 contextBridge.exposeInMainWorld('dshlDialog', {
-  openDataDir: () => ipcRenderer.send('dshl:dialog-open-data-dir'),
+  openProgramDir: () => ipcRenderer.send('dshl:dialog-open-program-dir'),
   close: () => ipcRenderer.send('dshl:dialog-close'),
 })
 

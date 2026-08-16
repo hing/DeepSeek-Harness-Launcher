@@ -31,6 +31,7 @@ const programDir = isPackaged
   : devRoot
 // 用户数据目录：程序目录内 `.dsh`（即开即用、绿色便携）。
 const dataDir = join(programDir, '.dsh')
+const launcherDataDir = join(programDir, '.launcher')
 const logDir = join(dataDir, 'logs')
 const nodeExe = join(nodeDir, 'node.exe')
 const dshBin = join(dshDir, 'node_modules', '@deepseek-ai', 'dsh', 'lib', 'bin.js')
@@ -38,7 +39,7 @@ const firstRunMarker = join(dataDir, '.first-run-done')
 
 // Electron 用户数据（缓存、Local Storage 等）从系统 AppData 改到程序目录内 .launcher，
 // 保持绿色便携（程序目录整体移动/复制即带走全部数据）。必须在 ready 前设置。
-app.setPath('userData', join(programDir, '.launcher'))
+app.setPath('userData', launcherDataDir)
 
 // ---------------------------------------------------------------- 配置解析
 
@@ -486,14 +487,13 @@ function writeDataReadme() {
     '备份/迁移：退出程序后把整个程序目录移动/复制到新位置即可，数据随目录一起走。',
     '',
     '【移动整个程序目录（绿色版解压目录）】',
-    '  推荐：托盘菜单「程序目录迁移…」→ 点「确认迁移」→ 程序自动停止服务、',
-    '  完成迁移准备并退出，随后即可安全移动目录；移动后重新启动，运行环境自动重建，',
-    '  用户数据不会丢失。',
-    '  跨盘移动请务必先点「确认迁移」；否则 Windows 资源管理器可能因跟随',
-    '  .dsh\\profiles\\node_modules 链接树反复复制内容而卡死。',
-    '',
-    'Electron 自身的数据（缓存、Local Storage 等）保存在程序目录内 .launcher\\，',
-    '随程序目录一起移动/复制，不写入系统 AppData。',
+    '  不能直接移动/复制程序目录！程序在 .dsh\\profiles\\node_modules 维护受管链接树，',
+    '  直接移动/复制会被资源管理器跟随链接反复复制而卡死。',
+    '  正确步骤：托盘菜单「程序备份迁移…」→ 点「清除受管链接树并退出」→',
+    '  程序自动停止服务、清除链接树并退出 → 手动移动/复制整个程序目录 →',
+    '  重新启动自动重建链接树，用户数据（.dsh）与 Electron 数据（.launcher）完好。',
+    '  若自动清除失败：退出程序后运行 .clean-links.bat，或手动删除',
+    '  .dsh\\profiles\\node_modules 目录后再迁移。',
     '',
     '如需改到其他位置，请设置环境变量 DSH_HOME 指向目标目录后重新启动。',
     '',
@@ -734,7 +734,8 @@ function buildTrayMenu() {
     { type: 'separator' },
     { label: '打开数据目录', click: openDataDir },
     { label: '打开日志目录', click: openLogDir },
-    { label: '程序目录迁移…', click: showMigrateDialog },
+    { label: '数据目录说明…', click: showDataDirDialog },
+    { label: '程序备份迁移…', click: showMigrateDialog },
     { type: 'separator' },
     { label: '关于', click: showAboutDialog },
     { label: '退出', click: () => app.quit() },
@@ -907,7 +908,7 @@ const DATA_DIR_DIALOG_HTML = `<div id="dshl-data-overlay">
 #dshl-data-overlay { position: fixed; inset: 0; z-index: 2147483647; display: flex;
   align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.24);
   backdrop-filter: blur(2px); font: 14px/22px "Segoe UI", system-ui, sans-serif; color: #0f1115; }
-#dshl-data-overlay .dshl-card { width: 500px; max-width: calc(100vw - 48px); box-sizing: border-box;
+#dshl-data-overlay .dshl-card { width: 520px; max-width: calc(100vw - 48px); box-sizing: border-box;
   padding: 28px; background: #ffffff; border-radius: 24px; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18); }
 #dshl-data-overlay .head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 #dshl-data-overlay .title { margin: 0; font-size: 20px; line-height: 28px; font-weight: 500; color: #0f1115; }
@@ -916,6 +917,11 @@ const DATA_DIR_DIALOG_HTML = `<div id="dshl-data-overlay">
 #dshl-data-overlay .copy p { margin: 0; }
 #dshl-data-overlay .copy p + p { margin-top: 12px; }
 #dshl-data-overlay .copy b { color: #0f1115; font-weight: 500; }
+#dshl-data-overlay .copy .path { word-break: break-all; user-select: text; font-size: 13px;
+  line-height: 20px; color: #0f1115; background: #f1f3f5; border-radius: 8px; padding: 8px 12px; margin-top: 6px; }
+#dshl-data-overlay .copy .warn { background: #fff7e6; border: 1px solid #ffe0a3; border-radius: 10px;
+  padding: 10px 14px; color: #8a5a00; }
+#dshl-data-overlay .copy .warn b { color: #8a5a00; }
 #dshl-data-overlay .actions { display: flex; justify-content: flex-end; margin-top: 24px; gap: 8px; }
 #dshl-data-overlay button { box-sizing: border-box; display: inline-flex; align-items: center;
   justify-content: center; height: 36px; padding: 0 14px; border-radius: 18px;
@@ -931,14 +937,17 @@ const DATA_DIR_DIALOG_HTML = `<div id="dshl-data-overlay">
   </div>
   <div class="body">
     <div class="copy">
-      <p>DeepSeek Harness 的全部用户数据（API Key、会话、插件、附件）默认保存在程序目录内的 <b>.dsh</b> 目录：</p>
-      <p id="path" style="word-break: break-all; user-select: text;"></p>
-      <p>Electron 自身的数据（缓存、Local Storage 等）保存在程序目录内的 <b>.launcher</b> 目录，不写入系统 AppData。</p>
-      <p>备份/迁移：退出程序后，把整个程序目录移动/复制到新位置即可，上述数据随目录一起走。</p>
+      <p><b>内核数据目录（.dsh）</b>：包含 DeepSeek Harness 的全部运行数据（API Key、会话、插件、附件等），保存在程序目录内的 <b>.dsh</b> 目录：</p>
+      <p class="path" id="dsh-path"></p>
+      <p><b>启动器数据目录（.launcher）</b>：包含启动器 Electron 自身的数据（缓存、Local Storage 等），保存在程序目录内的 <b>.launcher</b> 目录：</p>
+      <p class="path" id="launcher-path"></p>
+      <div class="warn">
+        <p><b>⚠ 备份/迁移</b>：必须通过托盘菜单 <b>「程序备份迁移」</b> 才能保证程序以及上述数据随目录完好备份/迁移！</p>
+      </div>
       <p>如需改到其他位置，设置环境变量 <b>DSH_HOME</b> 指向目标目录后重新启动。</p>
     </div>
     <div class="actions">
-      <button id="open">打开数据目录</button>
+      <button id="open">打开程序目录</button>
       <button id="ok" class="primary">知道了</button>
     </div>
   </div>
@@ -952,8 +961,9 @@ function openDataDirDialog() {
     if (document.getElementById('dshl-data-overlay')) return
     document.body.insertAdjacentHTML('beforeend', ${JSON.stringify(DATA_DIR_DIALOG_HTML)})
     const overlay = document.getElementById('dshl-data-overlay')
-    overlay.querySelector('#path').textContent = ${JSON.stringify(dataDir)}
-    overlay.querySelector('#open').addEventListener('click', () => window.dshlDialog.openDataDir())
+    overlay.querySelector('#dsh-path').textContent = ${JSON.stringify(dataDir)}
+    overlay.querySelector('#launcher-path').textContent = ${JSON.stringify(launcherDataDir)}
+    overlay.querySelector('#open').addEventListener('click', () => window.dshlDialog.openProgramDir())
     overlay.querySelector('#ok').addEventListener('click', () => window.dshlDialog.close())
   })()`)
 }
@@ -975,7 +985,7 @@ const MIGRATE_DIALOG_HTML = `<div id="dshl-migrate-overlay">
 #dshl-migrate-overlay { position: fixed; inset: 0; z-index: 2147483647; display: flex;
   align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.24);
   backdrop-filter: blur(2px); font: 14px/22px "Segoe UI", system-ui, sans-serif; color: #0f1115; }
-#dshl-migrate-overlay .dshl-card { width: 520px; max-width: calc(100vw - 48px); box-sizing: border-box;
+#dshl-migrate-overlay .dshl-card { width: 540px; max-width: calc(100vw - 48px); box-sizing: border-box;
   padding: 28px; background: #ffffff; border-radius: 24px; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18); }
 #dshl-migrate-overlay .head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 #dshl-migrate-overlay .title { margin: 0; font-size: 20px; line-height: 28px; font-weight: 500; color: #0f1115; }
@@ -984,33 +994,47 @@ const MIGRATE_DIALOG_HTML = `<div id="dshl-migrate-overlay">
 #dshl-migrate-overlay .copy p { margin: 0; }
 #dshl-migrate-overlay .copy p + p { margin-top: 12px; }
 #dshl-migrate-overlay .copy b { color: #0f1115; font-weight: 500; }
+#dshl-migrate-overlay .copy .warn { background: #fff7e6; border: 1px solid #ffe0a3; border-radius: 10px;
+  padding: 10px 14px; color: #8a5a00; }
+#dshl-migrate-overlay .copy .warn b { color: #8a5a00; }
+#dshl-migrate-overlay .copy .steps { margin-top: 8px; padding-left: 0; list-style: none; }
+#dshl-migrate-overlay .copy .steps li { margin-top: 8px; }
+#dshl-migrate-overlay .copy .steps .num { display: inline-block; width: 20px; height: 20px; line-height: 20px;
+  text-align: center; border-radius: 50%; background: #0f1115; color: #fff; font-size: 12px; margin-right: 8px; }
 #dshl-migrate-overlay .actions { display: flex; justify-content: flex-end; margin-top: 24px; gap: 8px; }
 #dshl-migrate-overlay button { box-sizing: border-box; display: inline-flex; align-items: center;
   justify-content: center; height: 36px; padding: 0 14px; border-radius: 18px;
   font: inherit; font-size: 14px; line-height: 22px; cursor: pointer;
   background: transparent; color: #0f1115; border: 1px solid rgba(0, 0, 0, 0.1); }
 #dshl-migrate-overlay button:hover { background: rgba(38, 49, 72, 0.06); }
-#dshl-migrate-overlay button.primary { background: #0f1115; color: #ffffff; border: none; min-width: 120px; }
+#dshl-migrate-overlay button.primary { background: #0f1115; color: #ffffff; border: none; min-width: 160px; }
 #dshl-migrate-overlay button.primary:hover { background: #43454a; }
 </style>
 <div class="dshl-card">
   <div class="head">
-    <h2 class="title">程序目录迁移</h2>
+    <h2 class="title">程序备份迁移</h2>
   </div>
   <div class="body">
     <div class="copy">
-      <p>将整个程序目录（绿色版解压目录）移动到其它位置。确认后将自动执行：</p>
-      <p>① 停止本地服务，完成迁移准备（不影响用户数据）<br>
-         ② 退出程序<br>
-         ③ 随后把整个程序目录移动/复制到新位置，再重新启动即可</p>
-      <p>跨盘移动（如复制到其它盘）前请务必先完成本迁移，否则 Windows 资源管理器
-         可能因跟随程序内部的链接而卡死。</p>
-      <p>用户数据（API Key、会话等）保存在 <b>.dsh</b>，Electron 数据保存在 <b>.launcher</b>，
-         均随目录一起迁移，不会丢失；移动后首次启动会自动重建运行环境。</p>
+      <p>本程序支持便携化运行，可以将整个程序目录移动到其它位置。</p>
+      <p>但是，<b>不能直接移动/复制程序目录</b>：程序运行时会在
+         <b>.dsh\\profiles\\node_modules</b> 维护一套指向安装目录的受管链接树。
+         直接移动/复制时，Windows 资源管理器会跟随这些链接反复复制
+         <b>resources\\dsh</b> 的内容，导致进度条卡死、目录损坏。</p>
+      <p>必须按以下步骤操作，才能保证程序完好备份/迁移：</p>
+      <ul class="steps">
+        <li><span class="num">1</span>点击 <b>「清除受管链接树并退出」</b>：程序将自动停止服务、清除受管链接树，然后自动退出</li>
+        <li><span class="num">2</span>随后手动把整个程序目录移动/复制到新位置，再重新启动程序，会自动重建受管链接树</li>
+        <li><span class="num">3</span>可进一步确认程序运行状态无异常、会话记录完好</li>
+      </ul>
+      <div class="warn">
+        <p><b>⚠ 提示</b>：若自动清除受管链接树失败，可退出程序后执行
+           <b>.clean-links.bat</b>，或手动删除 <b>.dsh\\profiles\\node_modules</b> 目录后再迁移。</p>
+      </div>
     </div>
     <div class="actions">
       <button id="cancel">取消</button>
-      <button id="migrate" class="primary">确认迁移</button>
+      <button id="migrate" class="primary">清除受管链接树并退出</button>
     </div>
   </div>
 </div>
@@ -1058,18 +1082,19 @@ function performMigration() {
     // 3. 提示用户可移动目录
     dialog.showMessageBox({
       type: 'info',
-      title: '程序目录迁移',
-      message: '迁移准备已完成，程序即将退出。',
+      title: '程序备份迁移',
+      message: '受管链接树已清除，程序即将退出。',
       detail:
         `请将整个程序目录移动到新位置（推荐整体剪切/移动），然后重新启动。\n` +
-        `移动后首次启动会自动重建运行环境，用户数据不会丢失。\n\n` +
+        `移动后首次启动会自动重建受管链接树，用户数据不会丢失。\n\n` +
         `当前程序目录：${programDir}`,
       buttons: ['知道了'],
     })
   } catch (error) {
     dialog.showErrorBox(
-      '程序目录迁移失败',
-      String(error && error.message || error) + '\n\n请退出程序后重试。',
+      '程序备份迁移失败',
+      String(error && error.message || error) + '\n\n请退出程序后运行 .clean-links.bat，' +
+        '或手动删除 .dsh\\profiles\\node_modules 目录后再迁移。',
     )
     return
   }
@@ -1081,6 +1106,18 @@ function openDataDir() {
   shell.openPath(dataDir).then((err) => {
     if (err) dialog.showErrorBox('无法打开目录', err)
   })
+}
+
+/** 打开程序目录（数据目录说明弹窗按钮）。 */
+function openProgramDir() {
+  shell.openPath(programDir).then((err) => {
+    if (err) dialog.showErrorBox('无法打开目录', err)
+  })
+}
+
+/** 托盘菜单入口：数据目录说明。 */
+function showDataDirDialog() {
+  openDataDirDialog()
 }
 
 function openLogDir() {
@@ -1212,7 +1249,7 @@ if (!app.requestSingleInstanceLock()) {
   ipcMain.handle('dshl:win-is-maximized', () => (mainWindow ? mainWindow.isMaximized() : false))
 
   // 「数据目录说明」覆盖层 IPC
-  ipcMain.on('dshl:dialog-open-data-dir', () => openDataDir())
+  ipcMain.on('dshl:dialog-open-program-dir', () => openProgramDir())
   ipcMain.on('dshl:dialog-close', () => {
     closeDataDirOverlay()
   })
